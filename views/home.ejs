@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Accueil - Port de Russell</title>
+</head>
+<body>
+  <h1>Port de Plaisance Russell</h1>
+  <p>Bienvenue sur l’application de gestion des catways</p>
+
+  <h2>Connexion</h2>
+  <form action="/login" method="POST">
+    <input type="email" name="email" placeholder="Email" required>
+    <input type="password" name="password" placeholder="Mot de passe" required>
+    <button type="submit">Se connecter</button>
+  </form>
+
+  <p><a href="/api-docs">Documentation API</a></p>
+
+  <p style="color: green;">MongoDB : <%= typeof connected !== 'undefined' && connected ? 'Connecté ✓' : 'Non connecté ✗' %></p>
+</body>
+</html>

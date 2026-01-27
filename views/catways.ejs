@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Catways</title>
+</head>
+<body>
+  <h1>Liste des catways</h1>
+
+  <% if (catways && catways.length > 0) { %>
+    <ul>
+      <% catways.forEach(catway => { %>
+        <li>
+          N° <%= catway.catwayNumber %> - <%= catway.type %> - État : <%= catway.catwayState %>
+        </li>
+      <% }) %>
+    </ul>
+  <% } else { %>
+    <p>Aucun catway trouvé.</p>
+  <% } %>
+
+  <a href="/dashboard">Retour au tableau de bord</a>
+</body>
+</html>
