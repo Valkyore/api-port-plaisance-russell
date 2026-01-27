@@ -53,12 +53,26 @@ app.get('/dashboard', (req, res) => {
   res.render('dashboard');
 });
 
+// route de récupération des réservations
+app.get('/reservations', async (req, res) => {
+  try {
+    const Reservation = require('./models/Reservation');
+    const reservations = await Reservation.find().lean();
+    console.log('Nombre de réservations trouvées :', reservations.length);
+    res.render('reservations', { reservations });
+  } catch (err) {
+    console.error('Erreur lecture reservations :', err);
+    res.render('reservations', { reservations: [] });
+  }
+});
+
+// route de récupération de la listes des catways
 app.get('/catways', async (req, res) => {
   try {
-    const Catway = require('./models/Catway');  // ← ce chemin doit être correct
-    const catways = await Catway.find().lean(); // .lean() accélère et simplifie
+    const Catway = require('./models/Catway');  
+    const catways = await Catway.find().lean(); 
     console.log('Catways trouvés :', catways);
-    console.log('Nombre de catways trouvés :', catways.length); // ← ajoute ce log
+    console.log('Nombre de catways trouvés :', catways.length); // ← ajout de ce log pour débug
     res.render('catways', { catways });
   } catch (err) {
     console.error('Erreur lecture catways :', err);
