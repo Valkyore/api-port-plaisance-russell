@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Nouvelle réservation</title>
+</head>
+<body>
+  <h1>Créer une nouvelle réservation</h1>
+
+  <form action="/reservations" method="POST">
+    <div>
+      <label>Numéro de catway :</label><br>
+      <input type="number" name="catwayNumber" required min="1">
+    </div>
+
+    <div>
+      <label>Nom du client :</label><br>
+      <input type="text" name="clientName" required>
+    </div>
+
+    <div>
+      <label>Nom du bateau :</label><br>
+      <input type="text" name="boatName" required>
+    </div>
+
+    <div>
+      <label>Date d'arrivée (check-in) :</label><br>
+      <input type="date" name="checkIn" required>
+    </div>
+
+    <div>
+      <label>Date de départ (check-out) :</label><br>
+      <input type="date" name="checkOut" required>
+    </div>
+
+    <br>
+    <button type="submit">Créer la réservation</button>
+  </form>
+
+  <br>
+  <a href="/reservations">Retour à la liste</a> |
+  <a href="/dashboard">Retour au tableau de bord</a>
+</body>
+</html>

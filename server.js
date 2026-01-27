@@ -66,6 +66,35 @@ app.get('/reservations', async (req, res) => {
   }
 });
 
+// route formulaire création de nouvelles reservations
+app.get('/reservations/new', (req, res) => {
+  res.render('reservations-new');
+});
+
+
+// route POST pour formulaire d'ajout de reservation
+app.post('/reservations', async (req, res) => {
+  try {
+    const Reservation = require('./models/Reservation');
+
+    const newReservation = new Reservation({
+      catwayNumber: req.body.catwayNumber,
+      clientName: req.body.clientName,
+      boatName: req.body.boatName,
+      checkIn: new Date(req.body.checkIn),
+      checkOut: new Date(req.body.checkOut)
+    });
+
+    await newReservation.save();
+
+    console.log('Nouvelle réservation créée :', newReservation._id);
+    res.redirect('/reservations');  // retour à la liste
+  } catch (err) {
+    console.error('Erreur création réservation :', err.message);
+    res.status(500).send('Erreur lors de la création : ' + err.message);
+  }
+});
+
 // route de récupération de la listes des catways
 app.get('/catways', async (req, res) => {
   try {
