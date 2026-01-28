@@ -99,7 +99,30 @@ app.get('/reservations/:id', async (req, res) => {
     res.status(500).render('error', { message: 'Erreur serveur' });
   }
 });
+
+// Suppression d'une réservation
+app.delete('/reservations/:id', async (req, res) => {
+  try {
+    const Reservation = require('./models/Reservation');
+    const deleted = await Reservation.findByIdAndDelete(req.params.id);
+
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Réservation non trouvée' });
+    }
+
+    console.log(`Réservation supprimée – ID: ${req.params.id}`);
+    res.json({ success: true, message: 'Réservation supprimée avec succès' });
+  } catch (err) {
+    console.error('Erreur suppression réservation :', err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
+
+});
+
+// bouton de suppression dans la pages details
+const methodOverride = require('method-override');
+app.use(methodOverride('_method'));
 
 // Formulaire création nouvelle réservation
 app.get('/reservations/new', (req, res) => {

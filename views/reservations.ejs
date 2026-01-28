@@ -7,17 +7,17 @@
 <body>
 
   <% if (success) { %>
-  <div style="background: #d4edda; color: #155724; padding: 15px; margin-bottom: 20px; border: 1px solid #c3e6cb; border-radius: 4px;">
-    <strong>Succès !</strong> Réservation créée avec succès 
-    <% if (reservationId) { %> (ID : <%= reservationId %>) <% } %>
-  </div>
-<% } %>
+    <div style="background: #d4edda; color: #155724; padding: 15px; margin-bottom: 20px; border: 1px solid #c3e6cb; border-radius: 4px;">
+      <strong>Succès !</strong> Réservation créée avec succès 
+      <% if (reservationId) { %> (ID : <%= reservationId %>) <% } %>
+    </div>
+  <% } %>
 
-<% if (errorMsg) { %>
-  <div style="background: #f8d7da; color: #721c24; padding: 15px; margin-bottom: 20px; border: 1px solid #f5c6cb; border-radius: 4px;">
-    <strong>Erreur :</strong> <%= errorMsg %>
-  </div>
-<% } %>
+  <% if (errorMsg) { %>
+    <div style="background: #f8d7da; color: #721c24; padding: 15px; margin-bottom: 20px; border: 1px solid #f5c6cb; border-radius: 4px;">
+      <strong>Erreur :</strong> <%= errorMsg %>
+    </div>
+  <% } %>
 
   <h1>Liste des réservations</h1>
 
@@ -30,7 +30,7 @@
           <th>Bateau</th>
           <th>Début</th>
           <th>Fin</th>
-          <th>Détails</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -42,7 +42,12 @@
             <td><%= new Date(resa.checkIn).toLocaleDateString() %></td>
             <td><%= new Date(resa.checkOut).toLocaleDateString() %></td>
             <td>
-              <a href="/reservations/<%= resa._id %>">Détails</a>
+              <a href="/reservations/<%= resa._id %>">Détails</a> |
+              <button 
+                onclick="supprimerReservation('<%= resa._id %>', '<%= resa.clientName.replace(/'/g, "\\'") %>')"
+                style="background: #dc3545; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px;">
+                Supprimer
+              </button>
             </td>
           </tr>
         <% }) %>
@@ -54,5 +59,30 @@
 
   <br>
   <a href="/dashboard">Retour au tableau de bord</a>
+
+  <script>
+  function supprimerReservation(id, clientName) {
+    if (!confirm(`Vraiment supprimer la réservation de ${clientName} ?`)) {
+      return;
+    }
+
+    fetch(`/reservations/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('Réservation supprimée avec succès !');
+        location.reload(); // recharge la page pour mettre à jour la liste
+      } else {
+        alert('Erreur : ' + (data.message || 'Impossible de supprimer'));
+      }
+    })
+    .catch(err => {
+      alert('Erreur réseau : ' + err.message);
+    });
+  }
+  </script>
 </body>
 </html>

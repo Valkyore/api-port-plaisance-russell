@@ -25,5 +25,11 @@
   <br>
   <a href="/reservations">Retour à la liste</a> |
   <a href="/dashboard">Retour au tableau de bord</a>
+  
+  <form action="/reservations/<%= reservation._id %>?_method=DELETE" method="POST" onsubmit="return confirm('Vraiment supprimer cette réservation ?');">
+  <button type="submit" style="background: #dc3545; color: white; padding: 10px 20px; border: none; cursor: pointer;">
+    Supprimer cette réservation
+  </button>
+</form>
 </body>
 </html>
