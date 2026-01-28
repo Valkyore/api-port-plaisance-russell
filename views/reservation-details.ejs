@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Détails de la réservation</title>
+</head>
+<body>
+  <h1>Détails de la réservation</h1>
+
+  <% if (reservation) { %>
+    <p><strong>ID :</strong> <%= reservation._id %></p>
+    <p><strong>Catway n° :</strong> <%= reservation.catwayNumber %></p>
+    <p><strong>Client :</strong> <%= reservation.clientName %></p>
+    <p><strong>Bateau :</strong> <%= reservation.boatName %></p>
+    <p><strong>Date d'arrivée :</strong> <%= new Date(reservation.checkIn).toLocaleString() %></p>
+    <p><strong>Date de départ :</strong> <%= new Date(reservation.checkOut).toLocaleString() %></p>
+
+    <p><strong>Durée :</strong> 
+      <%= Math.round((new Date(reservation.checkOut) - new Date(reservation.checkIn)) / (1000 * 60 * 60 * 24)) %> jours
+    </p>
+  <% } else { %>
+    <p>Réservation non trouvée.</p>
+  <% } %>
+
+  <br>
+  <a href="/reservations">Retour à la liste</a> |
+  <a href="/dashboard">Retour au tableau de bord</a>
+</body>
+</html>

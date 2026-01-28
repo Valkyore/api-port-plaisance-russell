@@ -5,6 +5,20 @@
   <title>Liste des réservations</title>
 </head>
 <body>
+
+  <% if (success) { %>
+  <div style="background: #d4edda; color: #155724; padding: 15px; margin-bottom: 20px; border: 1px solid #c3e6cb; border-radius: 4px;">
+    <strong>Succès !</strong> Réservation créée avec succès 
+    <% if (reservationId) { %> (ID : <%= reservationId %>) <% } %>
+  </div>
+<% } %>
+
+<% if (errorMsg) { %>
+  <div style="background: #f8d7da; color: #721c24; padding: 15px; margin-bottom: 20px; border: 1px solid #f5c6cb; border-radius: 4px;">
+    <strong>Erreur :</strong> <%= errorMsg %>
+  </div>
+<% } %>
+
   <h1>Liste des réservations</h1>
 
   <% if (reservations && reservations.length > 0) { %>
@@ -16,6 +30,7 @@
           <th>Bateau</th>
           <th>Début</th>
           <th>Fin</th>
+          <th>Détails</th>
         </tr>
       </thead>
       <tbody>
@@ -26,6 +41,9 @@
             <td><%= resa.boatName %></td>
             <td><%= new Date(resa.checkIn).toLocaleDateString() %></td>
             <td><%= new Date(resa.checkOut).toLocaleDateString() %></td>
+            <td>
+              <a href="/reservations/<%= resa._id %>">Détails</a>
+            </td>
           </tr>
         <% }) %>
       </tbody>
