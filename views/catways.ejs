@@ -2,23 +2,86 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Catways</title>
+  <title>Liste des catways</title>
 </head>
 <body>
+
+  <% if (success) { %>
+    <div style="background: #d4edda; color: #155724; padding: 15px; margin-bottom: 20px; border: 1px solid #c3e6cb; border-radius: 4px;">
+      <strong>Succès !</strong> 
+      <%= catwayId ? 'Catway créé/modifié avec succès (ID : ' + catwayId + ')' : 'Opération réussie' %>
+    </div>
+  <% } %>
+
+  <% if (errorMsg) { %>
+    <div style="background: #f8d7da; color: #721c24; padding: 15px; margin-bottom: 20px; border: 1px solid #f5c6cb; border-radius: 4px;">
+      <strong>Erreur :</strong> <%= errorMsg %>
+    </div>
+  <% } %>
+
   <h1>Liste des catways</h1>
 
   <% if (catways && catways.length > 0) { %>
-    <ul>
-      <% catways.forEach(catway => { %>
-        <li>
-          N° <%= catway.catwayNumber %> - <%= catway.type %> - État : <%= catway.catwayState %>
-        </li>
-      <% }) %>
-    </ul>
+    <table border="1" style="border-collapse: collapse; width: 100%; margin-bottom: 20px;">
+      <thead>
+        <tr>
+          <th>Numéro</th>
+          <th>Type</th>
+          <th>État</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% catways.forEach(catway => { %>
+          <tr>
+            <td><%= catway.catwayNumber %></td>
+            <td><%= catway.type %></td>
+            <td><%= catway.catwayState %></td>
+            <td>
+              <a href="/catways/<%= catway._id %>">Détails</a> |
+              <a href="/catways/<%= catway._id %>/edit">Modifier</a> |
+              <button 
+                onclick="supprimerCatway('<%= catway._id %>', '<%= catway.catwayNumber %>')"
+                style="background: #dc3545; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px;">
+                Supprimer
+              </button>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
   <% } else { %>
     <p>Aucun catway trouvé.</p>
   <% } %>
 
-  <a href="/dashboard">Retour au tableau de bord</a>
+  <p>
+    <a href="/catways/new">Créer un nouveau catway</a> | 
+    <a href="/dashboard">Retour au tableau de bord</a>
+  </p>
+
+  <script>
+  function supprimerCatway(id, numero) {
+    if (!confirm(`Vraiment supprimer le catway n°${numero} ?`)) {
+      return;
+    }
+
+    fetch(`/catways/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('Catway supprimé avec succès !');
+        location.reload();
+      } else {
+        alert('Erreur : ' + (data.message || 'Impossible de supprimer'));
+      }
+    })
+    .catch(err => {
+      alert('Erreur réseau : ' + err.message);
+    });
+  }
+  </script>
 </body>
 </html>

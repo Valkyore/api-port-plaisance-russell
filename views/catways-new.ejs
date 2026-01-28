@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Nouveau catway</title>
+</head>
+<body>
+  <h1>Créer un nouveau catway</h1>
+
+  <form action="/catways" method="POST">
+    <div>
+      <label>Numéro du catway :</label><br>
+      <input type="number" name="catwayNumber" required min="1">
+    </div>
+
+    <div>
+      <label>Type :</label><br>
+      <select name="type" required>
+        <option value="long">Long</option>
+        <option value="short">Short</option>
+      </select>
+    </div>
+
+    <div>
+      <label>État du catway :</label><br>
+      <input type="text" name="catwayState" required placeholder="ex: bon état, en réparation...">
+    </div>
+
+    <br>
+    <button type="submit">Créer le catway</button>
+  </form>
+
+  <br>
+  <a href="/catways">Retour à la liste</a> |
+  <a href="/dashboard">Retour au tableau de bord</a>
+</body>
+</html>

@@ -10,6 +10,7 @@
   <% if (reservation) { %>
     <p><strong>ID :</strong> <%= reservation._id %></p>
     <p><strong>Catway n° :</strong> <%= reservation.catwayNumber %></p>
+    <p><strong>Catway :</strong> <%= catway ? catway.catwayState : 'Non trouvé' %></p>
     <p><strong>Client :</strong> <%= reservation.clientName %></p>
     <p><strong>Bateau :</strong> <%= reservation.boatName %></p>
     <p><strong>Date d'arrivée :</strong> <%= new Date(reservation.checkIn).toLocaleString() %></p>
@@ -21,7 +22,6 @@
   <% } else { %>
     <p>Réservation non trouvée.</p>
   <% } %>
-
   <br>
   <a href="/reservations">Retour à la liste</a> |
   <a href="/dashboard">Retour au tableau de bord</a>
