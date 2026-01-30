@@ -3,7 +3,11 @@ const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
 const methodOverride = require('method-override');
-
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
+const usersRoutes = require('./routes/users');
+const catwaysRoutes = require('./routes/catways');
+const reservationsRoutes = require('./routes/reservations');
 console.log('Chemin absolu du dossier views :', path.join(__dirname, 'views'));
 
 const app = express();
@@ -12,9 +16,14 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
+app.use(require('cookie-parser')());
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+app.use('/users', usersRoutes);
+app.use('/catways', catwaysRoutes);
+app.use('/reservations', reservationsRoutes);
 
 // Connexion MongoDB
 let mongoConnected = false;
@@ -26,6 +35,25 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/port_russel
   .catch(err => {
     console.error('Erreur MongoDB :', err.message);
   });
+
+  // ───────────────────────────────
+// MIDDLEWARE AUTH
+// ───────────────────────────────
+const auth = (req, res, next) => {
+  const token = req.cookies.jwt;
+  if (!token) return res.redirect('/');
+
+  try {
+    req.user = jwt.verify(
+      token,
+      process.env.JWT_SECRET || 'cle_tres_longue_et_secrète'
+    );
+    next();
+  } catch (err) {
+    res.clearCookie('jwt');
+    res.redirect('/');
+  }
+};
 
 // ───────────────────────────────
 // PAGES DE BASE
@@ -40,30 +68,125 @@ app.get('/', (req, res) => {
   res.render('home', { connected: mongoConnected, error: null });
 });
 
-app.get('/dashboard', (req, res) => {
+app.get('/dashboard',auth, (req, res) => {
   res.render('dashboard');
 });
 
-// Création utilisateur test (temporaire)
+// ───────────────────────────────
+// CRÉATION UTILISATEUR TEST
+// ───────────────────────────────
 app.get('/create-test-user', async (req, res) => {
   try {
     const User = require('./models/User');
+
+    // Supprime l’ancien si existe
+    await User.deleteOne({ email: 'test@port-russell.fr' });
+
+    // Crée le nouveau (le mot de passe sera hashé automatiquement)
     const user = new User({
       name: 'Test Capitaine',
       email: 'test@port-russell.fr',
-      password: '123456'
+      password: '123456' 
     });
+
     await user.save();
-    res.send('Utilisateur test créé ! Email: test@port-russell.fr / MP: 123456');
+
+    res.send('Utilisateur test recréé avec succès ! <br>Email: test@port-russell.fr <br>Mot de passe: 123456');
   } catch (err) {
     res.send('Erreur : ' + err.message);
   }
 });
 
-// Simulation login
-app.post('/login', (req, res) => {
-  console.log('Tentative de connexion :', req.body);
-  res.redirect('/dashboard');
+// ───────────────────────────────
+// LOGIN
+// ───────────────────────────────
+app.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    console.log('Tentative de connexion :', { email, password });
+
+    const User = require('./models/User');
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      console.log('Utilisateur non trouvé');
+      return res.render('home', { connected: mongoConnected, error: 'Email ou mot de passe incorrect' });
+    }
+
+    const isMatch = await user.comparePassword(password);
+    console.log('Mot de passe correct ?', isMatch);
+
+    if (!isMatch) {
+      return res.render('home', { connected: mongoConnected, error: 'Email ou mot de passe incorrect' });
+    }
+
+    // Génère le token
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'cle_tres_longue_et_secrète', { expiresIn: '1d' });
+
+    // Stocke dans cookie
+    res.cookie('jwt', token, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
+
+    console.log('Connexion réussie, redirection vers dashboard');
+    res.redirect('/dashboard');
+  } catch (err) {
+    console.error('Erreur login :', err.message);
+    res.render('home', { connected: mongoConnected, error: 'Erreur serveur' });
+  }
+});
+
+// ───────────────────────────────
+// GESTION COMPTE UTILISATEUR (ajout et suppression)
+// ───────────────────────────────
+
+// Formulaire d'ajout d'un nouvel utilisateur
+app.get('/users/new', (req, res) => {
+  res.render('users-new',{ error: null });
+});
+
+// POST - Créer un nouvel utilisateur
+app.post('/users', async (req, res) => {
+  try {
+    const User = require('./models/User');
+
+    const { name, email, password } = req.body;
+
+    // Vérification simple (email unique déjà géré par unique: true dans le schéma)
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.render('users-new', { error: 'Cet email est déjà utilisé' });
+    }
+
+    const user = new User({ name, email, password });
+    await user.save();
+
+    // Génère le token JWT pour connecter immédiatement le nouvel utilisateur
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'cle_tres_longue_et_secrète', { expiresIn: '1d' });
+
+    // Stocke le token dans un cookie sécurisé
+    res.cookie('jwt', token, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
+
+    res.redirect('/dashboard?success=true&message=Utilisateur créé avec succès');
+  } catch (err) {
+    console.error('Erreur création utilisateur :', err.message);
+    res.render('users-new', { error: 'Erreur lors de la création : ' + err.message });
+  }
+});
+
+// Suppression d'un utilisateur (par ID)
+app.delete('/users/:id', async (req, res) => {
+  try {
+    const User = require('./models/User');
+    const deleted = await User.findByIdAndDelete(req.params.id);
+
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Utilisateur non trouvé' });
+    }
+
+    res.json({ success: true, message: 'Utilisateur supprimé' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 
 // ───────────────────────────────
@@ -71,7 +194,7 @@ app.post('/login', (req, res) => {
 // ───────────────────────────────
 
 // Ancienne route (conservée pour compatibilité)
-app.get('/reservations', async (req, res) => {
+app.get('/reservations',auth, async (req, res) => {
   try {
     const Reservation = require('./models/Reservation');
     const reservations = await Reservation.find().lean();
@@ -88,7 +211,7 @@ app.get('/reservations', async (req, res) => {
 });
 
 // NOUVEAU : Lister les réservations d'un catway spécifique
-app.get('/catways/:id/reservations', async (req, res) => {
+app.get('/catways/:id/reservations',auth, async (req, res) => {
   try {
     const Reservation = require('./models/Reservation');
     const reservations = await Reservation.find({ catwayNumber: req.params.id }).lean();
@@ -99,12 +222,12 @@ app.get('/catways/:id/reservations', async (req, res) => {
 });
 
 // Ancienne route création (conservée)
-app.get('/reservations/new', (req, res) => {
+app.get('/reservations/new',auth, (req, res) => {
   res.render('reservations-new');
 });
 
 // Ancienne route POST (conservée)
-app.post('/reservations', async (req, res) => {
+app.post('/reservations',auth, async (req, res) => {
   try {
     const Reservation = require('./models/Reservation');
     const newReservation = new Reservation({
@@ -123,7 +246,7 @@ app.post('/reservations', async (req, res) => {
 });
 
 // NOUVEAU : Créer une réservation pour un catway spécifique
-app.post('/catways/:id/reservations', async (req, res) => {
+app.post('/catways/:id/reservations',auth, async (req, res) => {
   try {
     const Reservation = require('./models/Reservation');
     const newReservation = new Reservation({
@@ -142,7 +265,7 @@ app.post('/catways/:id/reservations', async (req, res) => {
 });
 
 // Formulaire édition (conservé)
-app.get('/reservations/:id/edit', async (req, res) => {
+app.get('/reservations/:id/edit',auth, async (req, res) => {
   try {
     const Reservation = require('./models/Reservation');
     const reservation = await Reservation.findById(req.params.id).lean();
@@ -158,7 +281,7 @@ app.get('/reservations/:id/edit', async (req, res) => {
 });
 
 // Mise à jour (conservée)
-app.put('/reservations/:id', async (req, res) => {
+app.put('/reservations/:id',auth, async (req, res) => {
   try {
     const Reservation = require('./models/Reservation');
     const updated = await Reservation.findByIdAndUpdate(
@@ -184,7 +307,7 @@ app.put('/reservations/:id', async (req, res) => {
 });
 
 // Détails d'une réservation (conservé)
-app.get('/reservations/:id', async (req, res) => {
+app.get('/reservations/:id',auth, async (req, res) => {
   try {
     const Reservation = require('./models/Reservation');
     const Catway = require('./models/Catway');
@@ -203,7 +326,7 @@ app.get('/reservations/:id', async (req, res) => {
   }
 });
 
-app.delete('/reservations/:id', async (req, res) => {
+app.delete('/reservations/:id',auth, async (req, res) => {
   try {
     const Reservation = require('./models/Reservation');
     const deleted = await Reservation.findByIdAndDelete(req.params.id);
@@ -219,7 +342,7 @@ app.delete('/reservations/:id', async (req, res) => {
 });
 
 // NOUVEAU : Supprimer une réservation via sous-ressource
-app.delete('/catways/:id/reservations/:idResa', async (req, res) => {
+app.delete('/catways/:id/reservations/:idResa',auth, async (req, res) => {
   try {
     const Reservation = require('./models/Reservation');
     const deleted = await Reservation.findOneAndDelete({
@@ -241,7 +364,7 @@ app.delete('/catways/:id/reservations/:idResa', async (req, res) => {
 // ROUTES CATWAYS
 // ───────────────────────────────
 
-app.get('/catways', async (req, res) => {
+app.get('/catways',auth, async (req, res) => {
   try {
     const Catway = require('./models/Catway');
     const Reservation = require('./models/Reservation');
@@ -275,11 +398,11 @@ app.get('/catways', async (req, res) => {
   }
 });
 
-app.get('/catways/new', (req, res) => {
+app.get('/catways/new',auth, (req, res) => {
   res.render('catways-new');
 });
 
-app.post('/catways', async (req, res) => {
+app.post('/catways',auth, async (req, res) => {
   try {
     const Catway = require('./models/Catway');
     const newCatway = new Catway({
@@ -295,7 +418,7 @@ app.post('/catways', async (req, res) => {
   }
 });
 
-app.get('/catways/:id/edit', async (req, res) => {
+app.get('/catways/:id/edit',auth, async (req, res) => {
   try {
     const Catway = require('./models/Catway');
     const catway = await Catway.findById(req.params.id).lean();
@@ -310,7 +433,7 @@ app.get('/catways/:id/edit', async (req, res) => {
   }
 });
 
-app.get('/catways/:id', async (req, res) => {
+app.get('/catways/:id',auth, async (req, res) => {
   try {
     const Catway = require('./models/Catway');
     const Reservation = require('./models/Reservation');
@@ -334,7 +457,7 @@ app.get('/catways/:id', async (req, res) => {
   }
 });
 
-app.delete('/catways/:id', async (req, res) => {
+app.delete('/catways/:id',auth, async (req, res) => {
   try {
     const Catway = require('./models/Catway');
     const deleted = await Catway.findByIdAndDelete(req.params.id);
@@ -349,7 +472,7 @@ app.delete('/catways/:id', async (req, res) => {
   }
 });
 
-app.put('/catways/:id', async (req, res) => {
+app.put('/catways/:id',auth, async (req, res) => {
   try {
     const Catway = require('./models/Catway');
     const updated = await Catway.findByIdAndUpdate(
@@ -373,7 +496,7 @@ app.put('/catways/:id', async (req, res) => {
 });
 
 // PATCH /catways/:id (bonus – modification partielle, ex: seulement l'état)
-app.patch('/catways/:id', async (req, res) => {
+app.patch('/catways/:id',auth, async (req, res) => {
   try {
     const Catway = require('./models/Catway');
     const updated = await Catway.findByIdAndUpdate(

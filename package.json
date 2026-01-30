@@ -22,6 +22,7 @@
   "homepage": "https://github.com/Valkyore/api-port-plaisance-russell#readme",
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.3",
     "ejs": "^4.0.1",
     "express": "^5.2.1",
