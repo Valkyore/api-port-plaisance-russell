@@ -6,7 +6,7 @@ const router = express.Router();
 
 // Formulaire
 router.get('/new', auth, (req, res) => {
-  res.render('users/new');
+  res.render('users-new');
 });
 
 // Création
@@ -24,7 +24,7 @@ router.post('/:id/delete', auth, async (req, res) => {
 
 router.get('/', auth, async (req, res) => {
   const users = await User.find();
-  res.render('users/index', { users });
+  res.render('users', { users });
 });
 
 router.post('/:id/delete', auth, async (req, res) => {

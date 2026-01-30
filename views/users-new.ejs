@@ -18,7 +18,7 @@
 <body>
   <h1>Ajouter un nouvel utilisateur</h1>
 
-  <% if (error) { %>
+  <% if (typeof error !== 'undefined') { %>
     <p class="error"><%= error %></p>
   <% } %>
 

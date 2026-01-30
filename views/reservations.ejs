@@ -6,14 +6,17 @@
 </head>
 <body>
 
-  <% if (success) { %>
+  <% if (typeof success !== 'undefined' && success) { %>
     <div style="background: #d4edda; color: #155724; padding: 15px; margin-bottom: 20px; border: 1px solid #c3e6cb; border-radius: 4px;">
-      <strong>Succès !</strong> <%= errorMsg || 'Opération réussie' %>
-      <% if (reservationId) { %> (ID : <%= reservationId %>) <% } %>
+      <strong>Succès !</strong>
+      <%= typeof errorMsg !== 'undefined' ? errorMsg : 'Opération réussie' %>
+      <% if (typeof reservationId !== 'undefined') { %>
+        (ID : <%= reservationId %>)
+      <% } %>
     </div>
   <% } %>
 
-  <% if (errorMsg) { %>
+  <% if (typeof errorMsg !== 'undefined' && !success) { %>
     <div style="background: #f8d7da; color: #721c24; padding: 15px; margin-bottom: 20px; border: 1px solid #f5c6cb; border-radius: 4px;">
       <strong>Erreur :</strong> <%= errorMsg %>
     </div>
@@ -44,8 +47,8 @@
             <td>
               <a href="/reservations/<%= resa._id %>">Détails</a> |
               <a href="/reservations/<%= resa._id %>/edit">Modifier</a> |
-              <button 
-                onclick="supprimerReservation('<%= resa._id %>', '<%= resa.clientName.replace(/'/g, "\\'").replace(/"/g, '\\"') %>')"
+              <button
+                 onclick="supprimerReservation('<%= resa._id %>')"
                 style="background: #dc3545; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px;">
                 Supprimer
               </button>
@@ -62,28 +65,22 @@
   <a href="/dashboard">Retour au tableau de bord</a>
 
   <script>
-  function supprimerReservation(id, clientName) {
-    if (!confirm(`Vraiment supprimer la réservation de ${clientName} ?`)) {
-      return;
-    }
+    function supprimerReservation(id) {
+      if (!confirm('Vraiment supprimer cette réservation ?')) return;
 
-    fetch(`/reservations/${id}`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' }
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        alert('Réservation supprimée avec succès !');
-        location.reload();
-      } else {
-        alert('Erreur : ' + (data.message || 'Impossible de supprimer'));
-      }
-    })
-    .catch(err => {
-      alert('Erreur réseau : ' + err.message);
-    });
-  }
+      fetch(`/reservations/${id}`, { method: 'DELETE' })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            alert('Réservation supprimée avec succès');
+            location.reload();
+          } else {
+            alert(data.message || 'Erreur');
+          }
+        })
+        .catch(err => alert(err.message));
+    }
   </script>
+
 </body>
 </html>

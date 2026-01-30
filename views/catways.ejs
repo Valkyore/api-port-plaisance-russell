@@ -6,14 +6,14 @@
 </head>
 <body>
 
-  <% if (success) { %>
+  <% if (typeof success !== 'undefined' && success) { %>
     <div style="background: #d4edda; color: #155724; padding: 15px; margin-bottom: 20px; border: 1px solid #c3e6cb; border-radius: 4px;">
       <strong>Succès !</strong> 
       <%= catwayId ? 'Catway créé/modifié avec succès (ID : ' + catwayId + ')' : 'Opération réussie' %>
     </div>
   <% } %>
 
-  <% if (errorMsg) { %>
+  <% if (typeof errorMsg !== 'undefined') { %>
     <div style="background: #f8d7da; color: #721c24; padding: 15px; margin-bottom: 20px; border: 1px solid #f5c6cb; border-radius: 4px;">
       <strong>Erreur :</strong> <%= errorMsg %>
     </div>

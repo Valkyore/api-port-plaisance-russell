@@ -7,13 +7,13 @@ const router = express.Router();
 
 // Liste
 router.get('/', auth, async (req, res) => {
-  const catways = await Catway.find();
-  res.render('catways/index', { catways });
+  const catways = await Catway.find().sort({ catwayNumber: 1 });
+  res.render('catways', { catways });
 });
 
 // Création
 router.get('/new', auth, (req, res) => {
-  res.render('catways/new');
+  res.render('catways-new');
 });
 
 router.post('/', auth, async (req, res) => {
