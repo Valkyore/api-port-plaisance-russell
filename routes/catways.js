@@ -6,10 +6,21 @@ const router = express.Router();
 
 
 // Liste
+// Liste
 router.get('/', auth, async (req, res) => {
-  const catways = await Catway.find().sort({ catwayNumber: 1 });
-  res.render('catways', { catways });
+  const Catway = require('../models/Catway');
+  const Reservation = require('../models/Reservation');
+
+  const catways = await Catway.find().sort({ catwayNumber: 1 }).lean();
+
+  for (let catway of catways) {
+    const count = await Reservation.countDocuments({ catwayNumber: catway.catwayNumber });
+    catway.reservationsCount = count;
+  }
+
+  res.render('catways', { catways, success: false, catwayId: null, errorMsg: null });
 });
+
 
 // Création
 router.get('/new', auth, (req, res) => {

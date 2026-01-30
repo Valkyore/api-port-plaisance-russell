@@ -68,8 +68,16 @@ app.get('/', (req, res) => {
   res.render('home', { connected: mongoConnected, error: null });
 });
 
-app.get('/dashboard',auth, (req, res) => {
-  res.render('dashboard');
+app.get('/dashboard', auth, async (req, res) => {
+  const User = require('./models/User');
+  try {
+    const user = await User.findById(req.user.id).lean();
+    if (!user) return res.redirect('/');
+    res.render('dashboard', { user });
+  } catch (err) {
+    console.error('Erreur récupération user pour dashboard :', err);
+    res.redirect('/');
+  }
 });
 
 // ───────────────────────────────
@@ -194,21 +202,41 @@ app.delete('/users/:id', async (req, res) => {
 // ───────────────────────────────
 
 // Ancienne route (conservée pour compatibilité)
-app.get('/reservations',auth, async (req, res) => {
+app.get('/reservations', auth, async (req, res) => {
   try {
-    const Reservation = require('./models/Reservation');
-    const reservations = await Reservation.find().lean();
+    const Reservation = require('../models/Reservation');
+
+    // Récupérer le paramètre de tri depuis l'URL
+    const sortBy = req.query.sortBy || 'catwayNumber'; // valeur par défaut
+
+    let sortOption = {};
+    if (sortBy === 'catwayNumber') sortOption = { catwayNumber: 1 };
+    else if (sortBy === 'checkIn') sortOption = { checkIn: 1 };
+    else if (sortBy === 'checkOut') sortOption = { checkOut: 1 };
+
+    const reservations = await Reservation.find().sort(sortOption).lean();
 
     const success = req.query.success === 'true';
     const reservationId = req.query.id;
     const errorMsg = req.query.error;
 
-    res.render('reservations', { reservations, success, reservationId, errorMsg });
+    res.render('reservations', { 
+      reservations, 
+      success, 
+      reservationId, 
+      errorMsg, 
+      sortBy // <-- on passe bien la variable à la vue
+    });
   } catch (err) {
     console.error('Erreur lecture reservations :', err);
-    res.render('reservations', { reservations: [], errorMsg: err.message });
+    res.render('reservations', { 
+      reservations: [], 
+      errorMsg: err.message,
+      sortBy: 'catwayNumber' // <-- valeur par défaut si erreur
+    });
   }
 });
+
 
 // NOUVEAU : Lister les réservations d'un catway spécifique
 app.get('/catways/:id/reservations',auth, async (req, res) => {

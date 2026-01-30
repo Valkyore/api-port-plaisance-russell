@@ -23,6 +23,17 @@
   <% } %>
 
   <h1>Liste des réservations</h1>
+  <h2>Tri des réservations :</h2>
+<form method="GET" action="/reservations">
+  <label for="sortBy">Trier par :</label>
+  <select name="sortBy" id="sortBy" onchange="this.form.submit()">
+    <option value="catwayNumber" <%= sortBy === 'catwayNumber' ? 'selected' : '' %>>Numéro de catway</option>
+    <option value="checkIn" <%= sortBy === 'checkIn' ? 'selected' : '' %>>Date début</option>
+    <option value="checkOut" <%= sortBy === 'checkOut' ? 'selected' : '' %>>Date fin</option>
+  </select>
+</form>
+<br>
+
 
   <% if (reservations && reservations.length > 0) { %>
     <table border="1" style="border-collapse: collapse; width: 100%;">
@@ -62,7 +73,8 @@
   <% } %>
 
   <br>
-  <a href="/dashboard">Retour au tableau de bord</a>
+  <a href="/dashboard">Retour au tableau de bord</a> <br> <br>
+  <a href="/reservations/new">Créer une nouvelle réservation</a>
 
   <script>
     function supprimerReservation(id) {
