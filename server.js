@@ -37,7 +37,7 @@ app.get('/debug-dashboard', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.render('home', { connected: mongoConnected });
+  res.render('home', { connected: mongoConnected, error: null });
 });
 
 app.get('/dashboard', (req, res) => {
@@ -67,9 +67,10 @@ app.post('/login', (req, res) => {
 });
 
 // ───────────────────────────────
-// ROUTES RÉSERVATIONS
+// ROUTES RÉSERVATIONS (sous-ressource de catway + anciennes routes conservées)
 // ───────────────────────────────
 
+// Ancienne route (conservée pour compatibilité)
 app.get('/reservations', async (req, res) => {
   try {
     const Reservation = require('./models/Reservation');
@@ -79,25 +80,30 @@ app.get('/reservations', async (req, res) => {
     const reservationId = req.query.id;
     const errorMsg = req.query.error;
 
-    res.render('reservations', {
-      reservations,
-      success,
-      reservationId,
-      errorMsg
-    });
+    res.render('reservations', { reservations, success, reservationId, errorMsg });
   } catch (err) {
     console.error('Erreur lecture reservations :', err);
-    res.render('reservations', { 
-      reservations: [], 
-      errorMsg: err.message 
-    });
+    res.render('reservations', { reservations: [], errorMsg: err.message });
   }
 });
 
+// NOUVEAU : Lister les réservations d'un catway spécifique
+app.get('/catways/:id/reservations', async (req, res) => {
+  try {
+    const Reservation = require('./models/Reservation');
+    const reservations = await Reservation.find({ catwayNumber: req.params.id }).lean();
+    res.render('reservations', { reservations, catwayId: req.params.id });
+  } catch (err) {
+    res.render('reservations', { reservations: [], errorMsg: err.message });
+  }
+});
+
+// Ancienne route création (conservée)
 app.get('/reservations/new', (req, res) => {
   res.render('reservations-new');
 });
 
+// Ancienne route POST (conservée)
 app.post('/reservations', async (req, res) => {
   try {
     const Reservation = require('./models/Reservation');
@@ -112,12 +118,30 @@ app.post('/reservations', async (req, res) => {
     await newReservation.save();
     res.redirect(`/reservations?success=true&id=${newReservation._id}`);
   } catch (err) {
-    console.error('Erreur création réservation :', err.message);
     res.redirect(`/reservations?success=false&error=${encodeURIComponent(err.message || 'Erreur inconnue')}`);
   }
 });
 
-// Formulaire édition d'une réservation
+// NOUVEAU : Créer une réservation pour un catway spécifique
+app.post('/catways/:id/reservations', async (req, res) => {
+  try {
+    const Reservation = require('./models/Reservation');
+    const newReservation = new Reservation({
+      catwayNumber: Number(req.params.id),
+      clientName: req.body.clientName.trim(),
+      boatName: req.body.boatName.trim(),
+      checkIn: new Date(req.body.checkIn),
+      checkOut: new Date(req.body.checkOut)
+    });
+
+    await newReservation.save();
+    res.redirect(`/catways/${req.params.id}/reservations?success=true`);
+  } catch (err) {
+    res.redirect(`/catways/${req.params.id}/reservations?error=${encodeURIComponent(err.message)}`);
+  }
+});
+
+// Formulaire édition (conservé)
 app.get('/reservations/:id/edit', async (req, res) => {
   try {
     const Reservation = require('./models/Reservation');
@@ -129,12 +153,11 @@ app.get('/reservations/:id/edit', async (req, res) => {
 
     res.render('reservations-edit', { reservation });
   } catch (err) {
-    console.error('Erreur édition réservation :', err);
     res.status(500).render('error', { message: 'Erreur serveur' });
   }
 });
 
-// Mise à jour d'une réservation
+// Mise à jour (conservée)
 app.put('/reservations/:id', async (req, res) => {
   try {
     const Reservation = require('./models/Reservation');
@@ -156,12 +179,11 @@ app.put('/reservations/:id', async (req, res) => {
 
     res.redirect(`/reservations?success=true&message=Réservation modifiée avec succès`);
   } catch (err) {
-    console.error('Erreur mise à jour réservation :', err.message);
     res.redirect(`/reservations?success=false&error=${encodeURIComponent(err.message || 'Erreur inconnue')}`);
   }
 });
 
-// Détails d'une réservation
+// Détails d'une réservation (conservé)
 app.get('/reservations/:id', async (req, res) => {
   try {
     const Reservation = require('./models/Reservation');
@@ -175,12 +197,8 @@ app.get('/reservations/:id', async (req, res) => {
 
     const catway = await Catway.findOne({ catwayNumber: reservation.catwayNumber }).lean();
 
-    res.render('reservation-details', { 
-      reservation,
-      catway
-    });
+    res.render('reservation-details', { reservation, catway });
   } catch (err) {
-    console.error('Erreur détails réservation :', err.message);
     res.status(500).render('error', { message: 'Erreur serveur' });
   }
 });
@@ -196,7 +214,25 @@ app.delete('/reservations/:id', async (req, res) => {
 
     res.json({ success: true, message: 'Réservation supprimée avec succès' });
   } catch (err) {
-    console.error('Erreur suppression :', err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// NOUVEAU : Supprimer une réservation via sous-ressource
+app.delete('/catways/:id/reservations/:idResa', async (req, res) => {
+  try {
+    const Reservation = require('./models/Reservation');
+    const deleted = await Reservation.findOneAndDelete({
+      _id: req.params.idResa,
+      catwayNumber: req.params.id
+    });
+
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Réservation non trouvée' });
+    }
+
+    res.json({ success: true, message: 'Réservation supprimée' });
+  } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
@@ -208,13 +244,22 @@ app.delete('/reservations/:id', async (req, res) => {
 app.get('/catways', async (req, res) => {
   try {
     const Catway = require('./models/Catway');
-    const catways = await Catway.find().lean();
+    const Reservation = require('./models/Reservation');
 
+    // Récupère tous les catways triés par catwayNumber croissant
+    const catways = await Catway.find().sort({ catwayNumber: 1 }).lean();
+
+    // Ajoute le nombre de réservations pour chaque catway
+    for (let catway of catways) {
+      const count = await Reservation.countDocuments({ catwayNumber: catway.catwayNumber });
+      catway.reservationsCount = count;
+    }
+
+    // Variables pour les messages de succès/erreur
     const success = req.query.success === 'true';
     const catwayId = req.query.id;
     const errorMsg = req.query.error;
 
-    console.log('Nombre de catways trouvés :', catways.length);
     res.render('catways', { 
       catways, 
       success, 
@@ -246,12 +291,10 @@ app.post('/catways', async (req, res) => {
     await newCatway.save();
     res.redirect(`/catways?success=true&id=${newCatway._id}`);
   } catch (err) {
-    console.error('Erreur création catway :', err.message);
     res.redirect(`/catways?success=false&error=${encodeURIComponent(err.message || 'Erreur inconnue')}`);
   }
 });
 
-// Formulaire édition d'un catway
 app.get('/catways/:id/edit', async (req, res) => {
   try {
     const Catway = require('./models/Catway');
@@ -263,12 +306,10 @@ app.get('/catways/:id/edit', async (req, res) => {
 
     res.render('catways-edit', { catway });
   } catch (err) {
-    console.error('Erreur édition catway :', err);
     res.status(500).render('error', { message: 'Erreur serveur' });
   }
 });
 
-// Détails d'un catway
 app.get('/catways/:id', async (req, res) => {
   try {
     const Catway = require('./models/Catway');
@@ -280,7 +321,6 @@ app.get('/catways/:id', async (req, res) => {
 
     res.render('catway-details', { catway });
   } catch (err) {
-    console.error('Erreur détails catway :', err);
     res.status(500).render('error', { message: 'Erreur serveur' });
   }
 });
@@ -296,12 +336,10 @@ app.delete('/catways/:id', async (req, res) => {
 
     res.json({ success: true, message: 'Catway supprimé avec succès' });
   } catch (err) {
-    console.error('Erreur suppression catway :', err.message);
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// Mise à jour d'un catway
 app.put('/catways/:id', async (req, res) => {
   try {
     const Catway = require('./models/Catway');
@@ -321,8 +359,27 @@ app.put('/catways/:id', async (req, res) => {
 
     res.redirect(`/catways?success=true&message=Catway modifié avec succès`);
   } catch (err) {
-    console.error('Erreur mise à jour catway :', err.message);
     res.redirect(`/catways?success=false&error=${encodeURIComponent(err.message || 'Erreur inconnue')}`);
+  }
+});
+
+// PATCH /catways/:id (bonus – modification partielle, ex: seulement l'état)
+app.patch('/catways/:id', async (req, res) => {
+  try {
+    const Catway = require('./models/Catway');
+    const updated = await Catway.findByIdAndUpdate(
+      req.params.id,
+      { catwayState: req.body.catwayState },
+      { new: true, runValidators: true }
+    );
+
+    if (!updated) {
+      return res.status(404).render('error', { message: 'Catway non trouvé' });
+    }
+
+    res.redirect(`/catways?success=true&message=État modifié`);
+  } catch (err) {
+    res.redirect(`/catways?error=${encodeURIComponent(err.message)}`);
   }
 });
 

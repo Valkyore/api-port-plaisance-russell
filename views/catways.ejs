@@ -28,6 +28,7 @@
           <th>Numéro</th>
           <th>Type</th>
           <th>État</th>
+          <th>Réservations</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -37,6 +38,9 @@
             <td><%= catway.catwayNumber %></td>
             <td><%= catway.type %></td>
             <td><%= catway.catwayState %></td>
+            <td>
+              <%= catway.reservationsCount || 0 %> réservation(s)
+            </td>
             <td>
               <a href="/catways/<%= catway._id %>">Détails</a> |
               <a href="/catways/<%= catway._id %>/edit">Modifier</a> |
