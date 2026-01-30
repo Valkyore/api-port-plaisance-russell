@@ -11,6 +11,33 @@
   <p><strong>État :</strong> <%= catway.catwayState %></p>
   <p><strong>ID :</strong> <%= catway._id %></p>
 
+  <h2>Réservations associées</h2>
+
+  <% if (reservations && reservations.length > 0) { %>
+    <table border="1" style="border-collapse: collapse; width: 100%;">
+      <thead>
+        <tr>
+          <th>Client</th>
+          <th>Bateau</th>
+          <th>Début</th>
+          <th>Fin</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% reservations.forEach(resa => { %>
+          <tr>
+            <td><%= resa.clientName %></td>
+            <td><%= resa.boatName %></td>
+            <td><%= new Date(resa.checkIn).toLocaleDateString() %></td>
+            <td><%= new Date(resa.checkOut).toLocaleDateString() %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } else { %>
+    <p>Aucune réservation pour ce catway.</p>
+  <% } %>
+
   <br>
   <a href="/catways">Retour à la liste</a> |
   <a href="/dashboard">Retour au tableau de bord</a>

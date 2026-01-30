@@ -313,14 +313,23 @@ app.get('/catways/:id/edit', async (req, res) => {
 app.get('/catways/:id', async (req, res) => {
   try {
     const Catway = require('./models/Catway');
+    const Reservation = require('./models/Reservation');
+
     const catway = await Catway.findById(req.params.id).lean();
 
     if (!catway) {
       return res.status(404).render('error', { message: 'Catway non trouvé' });
     }
 
-    res.render('catway-details', { catway });
+    // Récupère toutes les réservations associées à ce catway
+    const reservations = await Reservation.find({ catwayNumber: catway.catwayNumber }).lean();
+
+    res.render('catway-details', { 
+      catway,
+      reservations
+    });
   } catch (err) {
+    console.error('Erreur détails catway :', err);
     res.status(500).render('error', { message: 'Erreur serveur' });
   }
 });
