@@ -92,7 +92,7 @@ app.get('/create-test-user', async (req, res) => {
 
     // Crée le nouveau (le mot de passe sera hashé automatiquement)
     const user = new User({
-      name: 'Test Capitaine',
+      name: 'Capitaine Test',
       email: 'test@port-russell.fr',
       password: '123456' 
     });
@@ -548,3 +548,11 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Serveur démarré → http://localhost:${PORT}`);
 });
+
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`Serveur démarré → http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
