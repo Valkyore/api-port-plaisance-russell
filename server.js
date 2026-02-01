@@ -11,12 +11,31 @@ const reservationsRoutes = require('./routes/reservations');
 console.log('Chemin absolu du dossier views :', path.join(__dirname, 'views'));
 
 const app = express();
+// Servir les fichiers statiques du dossier docs/public
+app.use('/docs', express.static(path.join(__dirname, 'docs')));
+// ────────────────
+// 2️⃣ SERVIR LA DOC → METTRE ICI, AVANT TOUT LE RESTE
+// ────────────────
+app.get('/docs', (req, res) => {
+  const filePath = path.join(__dirname, 'docs', 'index.html');
+  console.log("Chemin tenté :", filePath);
+  
+  const fs = require('fs');
+  if (fs.existsSync(filePath)) {
+    console.log("Fichier trouvé → envoi");
+    res.sendFile(filePath);
+  } else {
+    console.log("Fichier INTRouvABLE");
+    res.status(404).send("Fichier docs/index.html introuvable<br>Chemin cherché : " + filePath);
+  }
+});
 
 // Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
 app.use(require('cookie-parser')());
+
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -79,6 +98,8 @@ app.get('/dashboard', auth, async (req, res) => {
     res.redirect('/');
   }
 });
+
+
 
 // ───────────────────────────────
 // CRÉATION UTILISATEUR TEST
@@ -549,10 +570,5 @@ app.listen(PORT, () => {
   console.log(`Serveur démarré → http://localhost:${PORT}`);
 });
 
-if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
-    console.log(`Serveur démarré → http://localhost:${PORT}`);
-  });
-}
 
 module.exports = app;
